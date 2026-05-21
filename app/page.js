@@ -1,63 +1,84 @@
-import Image from "next/image";
-
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-zinc-50 flex items-center justify-center px-4 py-12">
+      <main className="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-zinc-100 px-8 py-10 flex flex-col gap-6">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Wishful</h1>
+          <p className="mt-1 text-zinc-500 text-sm">Generate the right message for every occasion.</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-zinc-700" htmlFor="occasion">
+            Occasion
+          </label>
+          <select
+            id="occasion"
+            className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 shadow-sm focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <option value="">Select an occasion</option>
+            <option value="birthday">Birthday</option>
+            <option value="anniversary">Anniversary</option>
+            <option value="housewarming">Housewarming</option>
+            <option value="wedding">Wedding</option>
+            <option value="new-baby">New Baby</option>
+            <option value="get-well-soon">Get-Well-Soon</option>
+            <option value="condolence">Condolence</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-zinc-700" htmlFor="tone">
+            Tone
+          </label>
+          <select
+            id="tone"
+            className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 shadow-sm focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
           >
-            Documentation
-          </a>
+            <option value="">Select a tone</option>
+            <option value="warm">Warm / Heartfelt</option>
+            <option value="funny">Funny</option>
+            <option value="formal">Formal</option>
+            <option value="poetic">Poetic</option>
+            <option value="casual">Casual</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-zinc-700" htmlFor="language">
+            Language
+          </label>
+          <select
+            id="language"
+            className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 shadow-sm focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
+          >
+            <option value="">Select a language</option>
+            <option value="english">English</option>
+            <option value="hindi">Hindi</option>
+            <option value="marathi">Marathi</option>
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-zinc-700" htmlFor="details">
+            Personal details <span className="text-zinc-400 font-normal">(optional)</span>
+          </label>
+          <textarea
+            id="details"
+            rows={3}
+            placeholder="e.g. recipient's name, your relationship, a memory."
+            className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 shadow-sm placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 resize-none"
+          />
+        </div>
+
+        <button
+          type="button"
+          className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-zinc-700 active:bg-zinc-800 transition-colors"
+        >
+          Generate
+        </button>
+
+        <div className="rounded-lg border border-zinc-100 bg-zinc-50 px-4 py-6 text-center min-h-[96px] flex items-center justify-center">
+          <p className="text-sm text-zinc-400 italic">Your message will appear here.</p>
         </div>
       </main>
     </div>
