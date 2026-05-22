@@ -13,7 +13,7 @@ const ALL_TONES = [
 const CONDOLENCE_TONES = new Set(["warm", "formal", "poetic"]);
 
 export default function Home() {
-  const [occasion, setOccasion] = useState("");
+const [occasion, setOccasion] = useState("");
   const [tone, setTone] = useState("");
   const [language, setLanguage] = useState("");
   const [generating, setGenerating] = useState(false);
