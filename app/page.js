@@ -13,20 +13,40 @@ const ALL_TONES = [
 const CONDOLENCE_TONES = new Set(["warm", "formal", "poetic"]);
 
 export default function Home() {
-const [occasion, setOccasion] = useState("");
+  const [occasion, setOccasion] = useState("");
   const [tone, setTone] = useState("");
   const [language, setLanguage] = useState("");
+  const [personalDetails, setPersonalDetails] = useState("");
   const [generating, setGenerating] = useState(false);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   const isReady = Boolean(occasion && tone && language);
 
-  function handleGenerate() {
+  async function handleGenerate() {
     setGenerating(true);
-    setTimeout(() => {
-      setMessage("This is a placeholder message. Real LLM-generated greetings coming in Week 3.");
+    setMessage("");
+    setError("");
+
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ occasion, tone, language, personalDetails }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error ?? "Something went wrong. Please try again.");
+      } else {
+        setMessage(data.message);
+      }
+    } catch {
+      setError("Could not reach the server. Check your connection and try again.");
+    } finally {
       setGenerating(false);
-    }, 1500);
+    }
   }
 
   const isCondolence = occasion === "condolence";
@@ -99,9 +119,9 @@ const [occasion, setOccasion] = useState("");
             className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 shadow-sm focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200"
           >
             <option value="">Select a language</option>
-            <option value="english">English</option>
-            <option value="hindi">Hindi</option>
-            <option value="marathi">Marathi</option>
+            <option value="English">English</option>
+            <option value="Hindi">Hindi</option>
+            <option value="Marathi">Marathi</option>
           </select>
         </div>
 
@@ -113,6 +133,8 @@ const [occasion, setOccasion] = useState("");
             id="details"
             rows={3}
             placeholder="e.g. recipient's name, your relationship, a memory."
+            value={personalDetails}
+            onChange={(e) => setPersonalDetails(e.target.value)}
             className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-800 shadow-sm placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-200 resize-none"
           />
         </div>
@@ -134,7 +156,9 @@ const [occasion, setOccasion] = useState("");
         </div>
 
         <div className="rounded-lg border border-zinc-100 bg-zinc-50 px-4 py-6 text-center min-h-[96px] flex items-center justify-center">
-          {message ? (
+          {error ? (
+            <p className="text-sm text-red-500">{error}</p>
+          ) : message ? (
             <p className="text-sm text-zinc-700">{message}</p>
           ) : (
             <p className="text-sm text-zinc-400 italic">Your message will appear here.</p>
