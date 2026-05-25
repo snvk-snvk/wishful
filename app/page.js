@@ -18,33 +18,69 @@ export default function Home() {
   const [language, setLanguage] = useState("");
   const [personalDetails, setPersonalDetails] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [loadingLabel, setLoadingLabel] = useState("Generating…");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   const isReady = Boolean(occasion && tone && language);
 
   async function handleGenerate() {
+    // Explicit guard: ignore any call that arrives while a request is already
+    // in flight. The disabled prop on the button is the primary prevention, but
+    // this catches anything the DOM layer can't — see explanation below.
+    if (generating) return;
+
     setGenerating(true);
+    setLoadingLabel("Generating…");
     setMessage("");
     setError("");
+
+    // Progression labels — reassure the user without being alarming.
+    // Declared here so the finally block can clear them via closure.
+    const label3sId = setTimeout(() => setLoadingLabel("Still working…"), 3_000);
+    const label8sId = setTimeout(() => setLoadingLabel("Almost there…"),   8_000);
+
+    // 25-second backstop: if the backend never responds in time, abort the
+    // fetch so the UI doesn't stay frozen indefinitely. This is intentionally
+    // longer than the backend's own 20-second Gemini timeout, giving the
+    // server a chance to return a clean error first.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25_000);
 
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ occasion, tone, language, personalDetails }),
+        signal: controller.signal,
       });
 
-      const data = await res.json();
+      // Parse JSON defensively — a non-JSON body (e.g. a 504 HTML page from
+      // the hosting platform) should not mask the real error with a false
+      // "could not reach the server" message.
+      let data = {};
+      try {
+        data = await res.json();
+      } catch {
+        // body wasn't JSON; data stays {} and the fallback message below applies
+      }
 
       if (!res.ok) {
         setError(data.error ?? "Something went wrong. Please try again.");
       } else {
         setMessage(data.message);
       }
-    } catch {
-      setError("Could not reach the server. Check your connection and try again.");
+    } catch (err) {
+      if (err?.name === "AbortError") {
+        setError("The AI is taking longer than usual. Please try again.");
+      } else {
+        setError("Could not reach the server. Check your connection and try again.");
+      }
     } finally {
+      clearTimeout(label3sId);
+      clearTimeout(label8sId);
+      clearTimeout(timeoutId);
+      setLoadingLabel("Generating…");
       setGenerating(false);
     }
   }
@@ -146,7 +182,7 @@ export default function Home() {
             onClick={handleGenerate}
             className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-zinc-700 active:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {generating ? "Generating…" : "Generate"}
+            {generating ? loadingLabel : "Generate"}
           </button>
           {!isReady && (
             <p className="text-xs text-zinc-400 text-center">

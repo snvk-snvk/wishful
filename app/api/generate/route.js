@@ -92,28 +92,104 @@ OUTPUT
   // ── 3. Call Gemini ─────────────────────────────────────────────────────────
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const result = await model.generateContent(prompt);
+
+    // The Gemini SDK has no built-in timeout, so race it against a 20-second
+    // timer. The .finally() always clears the timer — whether Gemini wins the
+    // race or the timeout does — so the handle is never left dangling.
+    let timeoutId;
+    const result = await Promise.race([
+      model.generateContent(prompt),
+      new Promise((_, reject) => {
+        timeoutId = setTimeout(() => {
+          const err = new Error("Gemini call timed out after 20 s");
+          err.code = "TIMEOUT";
+          reject(err);
+        }, 20_000);
+      }),
+    ]).finally(() => clearTimeout(timeoutId));
+
     const message = result.response.text();
 
-    return NextResponse.json({ message });
+    // Validate that the response is a usable greeting before sending it.
+    // .text() can return undefined/null if the model produced no candidates,
+    // and even a real string might be empty, whitespace-only, suspiciously
+    // short (model failure), or runaway long (prompt injection / hallucination).
+    const trimmed = typeof message === "string" ? message.trim() : "";
+    if (trimmed.length < 10 || trimmed.length > 2000) {
+      return NextResponse.json(
+        { error: "We couldn't generate a good message this time. Please try again." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ message: trimmed });
   } catch (error) {
     // ── 4. Handle errors ───────────────────────────────────────────────────
+    const status = error?.status;
+    const msg = (error?.message ?? "").toLowerCase();
+
+    // Our own 20-second sentinel (set above via Promise.race)
+    const isTimeout = error?.code === "TIMEOUT";
+
+    // 429 — rate limit / quota exhausted
     const isRateLimit =
-      error?.status === 429 ||
-      error?.message?.includes("429") ||
-      error?.message?.toLowerCase().includes("quota") ||
-      error?.message?.toLowerCase().includes("rate");
+      status === 429 ||
+      msg.includes("429") ||
+      msg.includes("quota") ||
+      msg.includes("rate limit");
+
+    // 401 / 403 — bad or missing API key (never surface internals to the user)
+    const isAuth =
+      status === 401 ||
+      status === 403 ||
+      msg.includes("401") ||
+      msg.includes("403") ||
+      msg.includes("unauthorized") ||
+      msg.includes("forbidden") ||
+      msg.includes("api key") ||
+      msg.includes("invalid key");
+
+    // Network — SDK fetch never completed (note: "timeout" is intentionally
+    // omitted here; our own timeout is caught by isTimeout above)
+    const isNetwork =
+      error instanceof TypeError ||
+      msg.includes("fetch failed") ||
+      msg.includes("network") ||
+      msg.includes("econnrefused") ||
+      msg.includes("econnreset");
+
+    if (isTimeout) {
+      return NextResponse.json(
+        { error: "The AI is taking longer than usual. Please try again." },
+        { status: 504 }
+      );
+    }
 
     if (isRateLimit) {
       return NextResponse.json(
-        { error: "Too many requests right now — please try again in a moment." },
+        { error: "We're getting a lot of requests right now. Please try again in a moment." },
         { status: 429 }
       );
     }
 
+    if (isAuth) {
+      return NextResponse.json(
+        { error: "Something's wrong on our end. Please try again later." },
+        { status: 500 }
+      );
+    }
+
+    if (isNetwork) {
+      return NextResponse.json(
+        { error: "Couldn't reach the AI service. Check your connection and try again." },
+        { status: 502 }
+      );
+    }
+
+    // Unexpected — log so we can investigate, return a generic message
     console.error("[/api/generate] Gemini error:", error);
     return NextResponse.json(
-      { error: "Something went wrong while generating your message. Please try again." },
+      { error: "Something went wrong. Please try again." },
       { status: 500 }
     );
   }
